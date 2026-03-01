@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Group ID Extractor - Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f0f2f5;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .test-title {
+            color: #333;
+            border-bottom: 2px solid #00a884;
+            padding-bottom: 10px;
+        }
+        
+        .test-case {
+            margin: 15px 0;
+            padding: 15px;
+            border-left: 4px solid #00a884;
+            background: #f8f9fa;
+        }
+        
+        .success { border-left-color: #28a745; }
+        .error { border-left-color: #dc3545; }
+        
+        .mock-whatsapp-structure {
+            border: 1px dashed #ccc;
+            padding: 15px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        
+        .group-info-panel {
+            background: #f7f8fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        button {
+            background: #00a884;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #017561;
+        }
+        
+        .log {
+            background: #f1f3f4;
+            border: 1px solid #dadce0;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>WhatsApp Group ID Extractor - Test Suite</h1>
+    
+    <div class="test-container">
+        <h2 class="test-title">Test Environment</h2>
+        <p>This page simulates WhatsApp Web's structure to test the Group ID extraction functionality.</p>
+        
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearLog()">Clear Log</button>
+        <button onclick="simulateGroupInfoPanel()">🔄 Insert Group ID Element</button>
+        <button onclick="resetMockPanel()">🔄 Reset Mock Panel</button>
+        
+        <div id="log" class="log"></div>
+    </div>
+
+    <!-- Mock WhatsApp DOM structure for testing -->
+    <div class="test-container">
+        <h2 class="test-title">Mock WhatsApp Structure</h2>
+        
+        <div class="mock-whatsapp-structure" id="mockWhatsApp">
+            <!-- Mock message with group ID -->
+            <div data-id="true_120363406415684625@g.us_AC7593255FE70AF81AEBC12EDF516917_972545751506@c.us">
+                Mock message element with group ID
+            </div>
+            
+            <!-- Mock message with dashed group ID (new format) -->  
+            <div data-id="false_972543343341-1427116328@g.us_3EB0C4DF00BE6127AAA7D5_125048677478451@lid">
+                Mock message element with dashed group ID
+            </div>
+            
+            <!-- Mock group info panel (will be dynamically created) -->
+            <div id="mockGroupInfoPanel" style="display: block; background: #f0f2f5; border: 1px solid #ddd; border-radius: 8px; margin-top: 15px;" aria-label="Group info" class="group-info-panel">
+                <div style="padding: 15px 20px; border-bottom: 1px solid #e9edef;">
+                    <h3 style="margin: 0; color: #111b21; font-size: 18px;">Test Group</h3>
+                    <p style="margin: 5px 0 0 0; color: #667781; font-size: 14px;">3 members</p>
+                </div>
+                
+                <div class="created-by-section" style="padding: 12px 20px; color: #667781; font-size: 14px; border-bottom: 1px solid #e9edef;">
+                    <span>Group created by John Doe, 12/25/2023</span>
+                </div>
+                
+                <!-- This is where our extension adds the Group ID element -->
+                <div id="groupIdPlaceholder" style="background: #fff7e6; border: 1px dashed #ffd98a; padding: 8px 20px; font-style: italic; color: #8a6914;">
+                    [Group ID will be inserted here by extension]
+                </div>
+                
+                <div class="media-section" style="padding: 12px 20px; color: #111b21; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 24px; height: 24px; background: #667781; border-radius: 4px;"></div>
+                        <span style="font-size: 16px;">Media, links and docs</span>
+                    </div>
+                    <span style="color: #667781; font-size: 16px;">0</span>
+                </div>
+                
+                <div style="padding: 12px 20px; color: #111b21; border-top: 1px solid #e9edef;">
+                    <div style="margin-bottom: 8px;">Members (3)</div>
+                    <div style="color: #667781; display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 32px; height: 32px; background: #00a884; border-radius: 50%;"></div>
+                        <span>John Doe (Admin)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Results -->
+    <div class="test-container">
+        <h2 class="test-title">Test Results</h2>
+        <div id="testResults"></div>
+    </div>
+
+    <script>
+        // Test utilities
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        function addTestResult(testName, success, message) {
+            const resultsDiv = document.getElementById('testResults');
+            const testDiv = document.createElement('div');
+            testDiv.className = `test-case ${success ? 'success' : 'error'}`;
+            testDiv.innerHTML = `<strong>${testName}</strong>: ${message}`;
+            resultsDiv.appendChild(testDiv);
+        }
+
+        // Mock WhatsApp Group ID Extractor for testing
+        class TestWhatsAppGroupIdExtractor {
+            constructor() {
+                this.groupIdPattern = /(\d+(?:-\d+)*@g\.us)/;
+            }
+
+            extractGroupId() {
+                const elements = document.querySelectorAll('[data-id*="@g.us"]');
+                
+                for (let element of elements) {
+                    const dataId = element.getAttribute('data-id');
+                    const match = dataId.match(this.groupIdPattern);
+                    
+                    if (match) {
+                        return match[1];
+                    }
+                }
+                
+                return null;
+            }
+
+            findGroupCreatedBySection(panel) {
+                const walker = document.createTreeWalker(
+                    panel,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.textContent.includes('Group created by') || 
+                        node.textContent.includes('created by') ||
+                        node.textContent.includes('Created by')) {
+                        return node.parentElement;
+                    }
+                }
+                
+                return this.findMediaLinksSection(panel);
+            }
+
+            findMediaLinksSection(panel) {
+                const walker = document.createTreeWalker(
+                    panel,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.textContent.includes('Media, links and docs')) {
+                        return node.parentElement;
+                    }
+                }
+                
+                return null;
+            }
+
+            createGroupIdElement(groupId) {
+                const container = document.createElement('div');
+                container.className = 'whatsapp-group-id-extractor';
+                container.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: flex-start; padding: 12px 20px;">
+                        <span style="color: #667781; font-size: 14px; flex-shrink: 0;">Group ID</span>
+                        <span style="color: #111b21; font-size: 14px; flex-grow: 1; user-select: all; cursor: text; word-break: break-all; margin: 0 12px;">${groupId}</span>
+                        <button class="copy-btn" onclick="copyToClipboard('${groupId}', this)" 
+                                style="background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; color: #667781; flex-shrink: 0;"
+                                title="Copy Group ID">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" fill="currentColor" opacity="0.6"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                return container;
+            }
+        }
+
+        // Test functions
+        function testGroupIdExtraction() {
+            log('Testing group ID extraction...');
+            
+            const extractor = new TestWhatsAppGroupIdExtractor();
+            
+            // Test regular group ID
+            const groupId1 = extractor.extractGroupId();
+            let success1 = false;
+            
+            if (groupId1 === '120363406415684625@g.us' || groupId1 === '972543343341-1427116328@g.us') {
+                log(`✅ Found first group ID: ${groupId1}`);
+                success1 = true;
+            } else {
+                log(`❌ Unexpected first group ID: ${groupId1}`);
+            }
+            
+            // Test that both formats can be detected
+            const allElements = document.querySelectorAll('[data-id*="@g.us"]');
+            let foundRegular = false;
+            let foundDashed = false;
+            
+            allElements.forEach(element => {
+                const dataId = element.getAttribute('data-id');
+                const match = dataId.match(extractor.groupIdPattern);
+                if (match) {
+                    const id = match[1];
+                    if (id === '120363406415684625@g.us') foundRegular = true;
+                    if (id === '972543343341-1427116328@g.us') foundDashed = true;
+                    log(`Found group ID: ${id}`);
+                }
+            });
+            
+            const success = success1 && foundRegular && foundDashed;
+            
+            if (success) {
+                log('✅ Group ID extraction test passed - supports both regular and dashed formats');
+                addTestResult('Group ID Extraction', true, 'Successfully extracted both regular and dashed group IDs');
+                return true;
+            } else {
+                log('❌ Group ID extraction test failed');
+                addTestResult('Group ID Extraction', false, `Regular found: ${foundRegular}, Dashed found: ${foundDashed}`);
+                return false;
+            }
+        }
+
+        function testMediaSectionFinding() {
+            log('Testing Group created by section finding...');
+            
+            const mockPanel = document.getElementById('mockGroupInfoPanel');
+            mockPanel.style.display = 'block';
+            
+            const extractor = new TestWhatsAppGroupIdExtractor();
+            const createdBySection = extractor.findGroupCreatedBySection(mockPanel);
+            
+            if (createdBySection) {
+                log('✅ Group created by section finding test passed');
+                addTestResult('Group Created By Section Finding', true, 'Successfully located group created by section');
+                return true;
+            } else {
+                log('❌ Group created by section finding test failed');
+                addTestResult('Group Created By Section Finding', false, 'Could not locate group created by section');
+                return false;
+            }
+        }
+
+        function testGroupIdElementCreation() {
+            log('Testing group ID element creation...');
+            
+            const extractor = new TestWhatsAppGroupIdExtractor();
+            const groupId = '120363406415684625@g.us';
+            const element = extractor.createGroupIdElement(groupId);
+            
+            if (element && element.querySelector('svg')) {
+                log('✅ Group ID element creation test passed');
+                addTestResult('Group ID Element Creation', true, 'Successfully created UI element with copy icon');
+                return true;
+            } else {
+                log('❌ Group ID element creation test failed');
+                addTestResult('Group ID Element Creation', false, 'Failed to create proper UI element');
+                return false;
+            }
+        }
+
+        function testClipboardFunctionality() {
+            log('Testing clipboard functionality...');
+            
+            // Note: Clipboard API requires HTTPS or localhost, so this is a mock test
+            if (navigator.clipboard) {
+                log('✅ Clipboard API available');
+                addTestResult('Clipboard API', true, 'Clipboard API is supported in this browser');
+                return true;
+            } else {
+                log('⚠️ Clipboard API not available (requires HTTPS)');
+                addTestResult('Clipboard API', false, 'Clipboard API not available - fallback needed');
+                return false;
+            }
+        }
+
+        function runAllTests() {
+            log('=== Starting Test Suite ===');
+            document.getElementById('testResults').innerHTML = '';
+            
+            const tests = [
+                testGroupIdExtraction,
+                testMediaSectionFinding, 
+                testGroupIdElementCreation,
+                testClipboardFunctionality
+            ];
+            
+            let passed = 0;
+            let total = tests.length;
+            
+            tests.forEach(test => {
+                if (test()) passed++;
+            });
+            
+            log(`=== Test Suite Complete: ${passed}/${total} tests passed ===`);
+            
+            if (passed === total) {
+                addTestResult('Overall Test Suite', true, `All ${total} tests passed! 🎉`);
+            } else {
+                addTestResult('Overall Test Suite', false, `${passed}/${total} tests passed. Please review failures.`);
+            }
+        }
+
+        function simulateGroupInfoPanel() {
+            log('Simulating group info panel with Group ID insertion...');
+            
+            const mockPanel = document.getElementById('mockGroupInfoPanel');
+            const placeholder = document.getElementById('groupIdPlaceholder');
+            
+            if (placeholder) {
+                const extractor = new TestWhatsAppGroupIdExtractor();
+                const groupId = extractor.extractGroupId();
+                
+                if (groupId) {
+                    // Remove placeholder and add actual Group ID element
+                    const groupIdElement = extractor.createGroupIdElement(groupId);
+                    placeholder.parentNode.replaceChild(groupIdElement, placeholder);
+                    
+                    log('✅ Successfully replaced placeholder with Group ID element');
+                    log(`📋 Group ID displayed: ${groupId}`);
+                    
+                    // Add visual highlight animation
+                    groupIdElement.style.animation = 'highlight 2s ease-in-out';
+                    
+                    // Add CSS for highlight animation if not exists
+                    if (!document.getElementById('highlightStyle')) {
+                        const style = document.createElement('style');
+                        style.id = 'highlightStyle';
+                        style.textContent = `
+                            @keyframes highlight {
+                                0% { background: #fff7e6; }
+                                50% { background: #e8f5e8; }
+                                100% { background: transparent; }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                } else {
+                    log('❌ No group ID found to display');
+                }
+            } else {
+                log('ℹ️ Group ID element already inserted or placeholder not found');
+            }
+        }
+
+        async function copyToClipboard(text, button) {
+            try {
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(text);
+                    
+                    // Visual feedback with icon change
+                    const svg = button.querySelector('svg');
+                    const originalSvg = svg.outerHTML;
+                    
+                    svg.outerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="#00a884"/>
+                        </svg>
+                    `;
+                    button.style.color = '#00a884';
+                    log(`✅ Copied to clipboard: ${text}`);
+                    
+                    setTimeout(() => {
+                        button.innerHTML = originalSvg;
+                        button.style.color = '#667781';
+                    }, 1500);
+                } else {
+                    // Fallback for older browsers or non-HTTPS
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    button.style.background = '#e8f5e8';
+                    log(`✅ Copied to clipboard (fallback): ${text}`);
+                    
+                    setTimeout(() => {
+                        button.style.background = 'none';
+                    }, 1500);
+                }
+            } catch (err) {
+                log(`❌ Failed to copy to clipboard: ${err}`);
+                button.style.color = '#dc3545';
+                
+                setTimeout(() => {
+                    button.style.color = '#667781';
+                }, 1500);
+            }
+        }
+        
+        function resetMockPanel() {
+            log('Resetting mock panel to initial state...');
+            
+            const mockPanel = document.getElementById('mockGroupInfoPanel');
+            const existingGroupId = mockPanel.querySelector('.whatsapp-group-id-extractor');
+            const createdBySection = mockPanel.querySelector('.created-by-section');
+            
+            // Remove existing group ID element if present
+            if (existingGroupId) {
+                existingGroupId.remove();
+            }
+            
+            // Add placeholder back if missing
+            if (createdBySection && !document.getElementById('groupIdPlaceholder')) {
+                const placeholder = document.createElement('div');
+                placeholder.id = 'groupIdPlaceholder';
+                placeholder.style.cssText = 'background: #fff7e6; border: 1px dashed #ffd98a; padding: 8px 20px; font-style: italic; color: #8a6914;';
+                placeholder.textContent = '[Group ID will be inserted here by extension]';
+                
+                createdBySection.parentNode.insertBefore(placeholder, createdBySection.nextSibling);
+            }
+            
+            log('✅ Mock panel reset to initial state');
+        }
+
+        // Initialize
+        log('Test environment initialized');
+        log('Ready to run tests. Click "Run All Tests" to begin.');
+    </script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+/**
+ * WhatsApp Group ID Extractor Styles
+ * Clean, simple design that integrates well with WhatsApp Web
+ */
+
+/* Main container */
+.whatsapp-group-id-extractor {
+    padding: 12px 20px;
+    background: transparent;
+}
+
+/* Horizontal layout for label, value, and copy button */
+.group-id-horizontal-layout {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+/* Group ID label */
+.group-id-label {
+    color: var(--text-secondary, #667781);
+    font-size: 14px;
+    font-weight: 400;
+    flex-shrink: 0;
+}
+
+/* Group ID value */
+.group-id-value {
+    color: var(--text-primary, #111b21);
+    font-size: 14px;
+    font-weight: 400;
+    flex-grow: 1;
+    user-select: all;
+    cursor: text;
+    word-break: break-all;
+    margin: 0 12px;
+}
+
+/* Copy button */
+.copy-group-id-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    color: var(--icon-secondary, #667781);
+}
+
+.copy-group-id-btn:hover {
+    color: var(--icon-primary, #111b21);
+    background: var(--background-default-hover, #f0f2f5);
+}
+
+.copy-group-id-btn:active {
+    transform: scale(0.95);
+}
+
+.copy-group-id-btn:focus {
+    outline: none;
+}
+
+/* Dark mode compatibility */
+@media (prefers-color-scheme: dark) {
+    .group-id-label {
+        color: var(--text-secondary, #8696a0);
+    }
+
+    .group-id-value {
+        color: var(--text-primary, #e9edef);
+    }
+
+    .copy-group-id-btn {
+        color: var(--icon-secondary, #8696a0);
+    }
+
+    .copy-group-id-btn:hover {
+        color: var(--icon-primary, #e9edef);
+        background: var(--background-default-hover, #2a2f32);
+    }
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .whatsapp-group-id-extractor {
+        padding: 10px 16px;
+    }
+
+    .group-id-horizontal-layout {
+        gap: 8px;
+    }
+
+    .copy-group-id-btn {
+        padding: 6px;
+    }
+}
+
+/* Animation for successful copy */
+@keyframes copySuccess {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.copy-group-id-btn.success {
+    animation: copySuccess 0.3s ease;
+}

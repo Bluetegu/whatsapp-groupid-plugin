@@ -1,0 +1,8 @@
+# Python virtual environment
+.venv/
+
+# Development and reference files
+tmp/
+
+# System files
+.DS_Store

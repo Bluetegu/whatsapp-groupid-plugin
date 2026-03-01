@@ -1,0 +1,9 @@
+# Development dependencies for WhatsApp Group ID Extractor
+# HTTP server and development tools (built-in Python modules)
+# No external dependencies required for this project
+
+# Optional development tools (uncomment if needed):
+# beautifulsoup4==4.12.2    # For HTML parsing in tests
+# selenium==4.15.0          # For automated browser testing
+# requests==2.31.0          # For API testing
+# pytest==7.4.3             # For advanced testing framework

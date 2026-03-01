@@ -1,0 +1,28 @@
+{
+    "name": "whatsapp-groupid-plugin",
+    "version": "1.0.0",
+    "description": "Chrome extension that adds WhatsApp group ID information to group info panels",
+    "main": "content-script.js",
+    "scripts": {
+        "dev": "python dev_server.py",
+        "test": "python -m http.server 8000 & open http://localhost:8000/test.html",
+        "build": "echo 'No build step required for this extension'",
+        "validate": "python validate_extension.py"
+    },
+    "keywords": [
+        "whatsapp",
+        "chrome-extension",
+        "group-id",
+        "openclaw"
+    ],
+    "author": "Your Name",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/your-username/whatsapp-groupid-plugin.git"
+    },
+    "devDependencies": {},
+    "engines": {
+        "chrome": ">=88.0.0"
+    }
+}
