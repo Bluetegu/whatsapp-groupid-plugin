@@ -19,13 +19,10 @@ class WhatsAppGroupIdExtractor {
     init() {
         if (this.isInitialized) return;
 
-        console.log('WhatsApp Group ID Extractor: Initializing...');
-
         // Wait for WhatsApp to load
         this.waitForWhatsAppLoad().then(() => {
             this.setupMutationObserver();
             this.isInitialized = true;
-            console.log('WhatsApp Group ID Extractor: Initialized successfully');
         });
     }
 
@@ -79,7 +76,6 @@ class WhatsAppGroupIdExtractor {
             : element.querySelector && element.querySelector(this.groupInfoPanelSelector);
 
         if (groupInfoPanel) {
-            console.log('WhatsApp Group ID Extractor: Group info panel detected');
             setTimeout(() => this.processGroupInfoPanel(groupInfoPanel), 100);
         }
     }
@@ -96,8 +92,6 @@ class WhatsAppGroupIdExtractor {
         const groupId = this.extractGroupId();
         if (groupId) {
             this.insertGroupIdElement(panel, groupId);
-        } else {
-            console.warn('WhatsApp Group ID Extractor: No group ID found');
         }
     }
 
@@ -113,7 +107,6 @@ class WhatsAppGroupIdExtractor {
             const match = dataId.match(this.groupIdPattern);
 
             if (match) {
-                console.log('WhatsApp Group ID Extractor: Found group ID:', match[1]);
                 return match[1];
             }
         }
@@ -131,9 +124,6 @@ class WhatsAppGroupIdExtractor {
         if (insertionPoint) {
             const groupIdElement = this.createGroupIdElement(groupId);
             insertionPoint.parentNode.insertBefore(groupIdElement, insertionPoint.nextSibling);
-            console.log('WhatsApp Group ID Extractor: Group ID element added successfully');
-        } else {
-            console.warn('WhatsApp Group ID Extractor: Could not find insertion point after Group created by section');
         }
     }
 
@@ -245,9 +235,7 @@ class WhatsAppGroupIdExtractor {
         try {
             await navigator.clipboard.writeText(groupId);
             this.showCopyFeedback(button, true);
-            console.log('WhatsApp Group ID Extractor: Group ID copied to clipboard:', groupId);
         } catch (err) {
-            console.error('WhatsApp Group ID Extractor: Failed to copy to clipboard:', err);
             this.showCopyFeedback(button, false);
         }
     }

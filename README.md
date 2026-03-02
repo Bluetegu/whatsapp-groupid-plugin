@@ -2,6 +2,8 @@
 
 A Chrome extension that automatically adds WhatsApp group ID information to the group info panel on WhatsApp Web, making it easy to copy group IDs for Openclaw configuration.
 
+*This extension was developed with the assistance of GitHub Copilot.*
+
 ## Features
 
 - 🎯 **Automatic Detection**: Automatically detects when you open a group info panel
