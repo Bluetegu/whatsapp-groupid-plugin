@@ -4,6 +4,12 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 
 *This extension was developed with the assistance of GitHub Copilot.*
 
+## Screenshot
+
+![WhatsApp Group ID Extractor in Action](store/Screenshot.png)
+
+*The extension automatically adds a "Group ID" section with one-click copy functionality to WhatsApp Web group info panels.*
+
 ## Features
 
 - 🎯 **Automatic Detection**: Automatically detects when you open a group info panel
