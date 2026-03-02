@@ -6,6 +6,3 @@ tmp/
 
 # System files
 .DS_Store
-
-# Chrome Web Store packages
-*.zip

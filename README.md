@@ -14,17 +14,27 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 
 ## Installation
 
-### From Chrome Web Store (Coming Soon)
-1. Visit the [Chrome Web Store listing]()
+### Option 1: Chrome Web Store (Coming Soon)
+1. Visit the [Chrome Web Store listing]() 
 2. Click "Add to Chrome"
 3. Navigate to WhatsApp Web to start using
 
-### Manual Installation (Development)
-1. Download or clone this repository
+### Option 2: Direct Download (Available Now)
+1. Download [whatsapp-groupid-plugin-v1.0.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.0.0.zip)
+2. Extract the ZIP file to a folder
+3. Open Chrome and go to `chrome://extensions/`
+4. Enable "Developer mode" (toggle in top right)
+5. Click "Load unpacked" and select the extracted folder
+6. Navigate to [web.whatsapp.com](https://web.whatsapp.com) to start using
+
+### Option 3: Clone Repository
+1. Clone this repository: `git clone https://github.com/Bluetegu/whatsapp-groupid-plugin.git`
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable "Developer mode" in the top right
-4. Click "Load unpacked" and select the extension folder
+4. Click "Load unpacked" and select the cloned folder
 5. Navigate to [web.whatsapp.com](https://web.whatsapp.com) to start using
+
+> **Note**: Options 2 and 3 require Developer mode, which Chrome will warn you about. This is normal for extensions not installed from the Chrome Web Store.
 
 ## How to Use
 
