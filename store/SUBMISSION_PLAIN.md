@@ -80,7 +80,7 @@ Last Updated: March 2, 2026
 Website: https://github.com/Bluetegu/whatsapp-groupid-plugin
 Support: https://github.com/Bluetegu/whatsapp-groupid-plugin/issues
 
-Version: 1.0.0
+Version: 1.1.0
 Minimum Chrome Version: 88
 
 Pricing: Free

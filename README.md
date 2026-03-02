@@ -20,7 +20,7 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 3. Navigate to WhatsApp Web to start using
 
 ### Option 2: Direct Download (Available Now)
-1. Download [whatsapp-groupid-plugin-v1.0.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.0.0.zip)
+1. Download [whatsapp-groupid-plugin-v1.1.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.1.0.zip)
 2. Extract the ZIP file to a folder
 3. Open Chrome and go to `chrome://extensions/`
 4. Enable "Developer mode" (toggle in top right)
@@ -57,25 +57,6 @@ This is the clean format needed for Openclaw configuration, extracted from Whats
 - **Content Script**: Runs only on WhatsApp Web pages
 - **DOM Observer**: Watches for group info panel changes
 - **Clipboard API**: Modern clipboard integration with fallback support
-
-### File Structure
-```
-whatsapp-groupid-plugin/
-├── manifest.json          # Extension configuration
-├── content-script.js      # Main functionality
-├── styles.css            # WhatsApp-matching styles  
-├── popup.html            # Extension popup interface
-├── icons/                # Extension icons (16, 48, 128px)
-├── test/                 # Test suite and utilities
-│   ├── test.html         # Interactive test suite
-│   ├── test_group_id.py  # Group ID extraction tests
-│   └── validate_extension.py # Extension validation
-├── dev_server.py         # Development HTTP server
-├── generate_icons.py     # Icon generation utility
-├── requirements.txt      # Python dependencies
-├── CONTRIBUTING.md       # Development guide
-└── README.md             # This file
-```
 
 ### Browser Support
 - Chrome 88+
@@ -140,6 +121,12 @@ The extension requests minimal permissions:
 - `host_permissions`: Limited to `web.whatsapp.com` only
 
 ## Changelog
+
+### Version 1.1.0 (March 2026)
+- ✅ Fixed language compatibility - now works in all WhatsApp Web languages
+- ⚡ Improved detection reliability using SVG-based identification
+- 🔧 Simplified architecture for better performance and maintainability
+- 🌐 Universal language support (no longer English-dependent)
 
 ### Version 1.0.0
 - Initial release

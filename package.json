@@ -1,6 +1,6 @@
 {
     "name": "whatsapp-groupid-plugin",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Chrome extension that adds WhatsApp group ID information to group info panels",
     "main": "content-script.js",
     "scripts": {

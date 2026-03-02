@@ -6,8 +6,6 @@
 class WhatsAppGroupIdExtractor {
     constructor() {
         this.groupIdPattern = /(\d+(?:-\d+)*@g\.us)/;
-        this.mediaLinksSectionSelector = 'span:contains("Media, links and docs")';
-        this.groupInfoPanelSelector = '[aria-label="Group info"]';
         this.isInitialized = false;
 
         this.init();
@@ -67,16 +65,12 @@ class WhatsAppGroupIdExtractor {
     }
 
     /**
-     * Check if a node contains or is a group info panel
+     * Check if a node might contain a group info panel
      */
     checkForGroupInfoPanel(element) {
-        // Check if element itself is a group info panel
-        const groupInfoPanel = element.matches && element.matches(this.groupInfoPanelSelector)
-            ? element
-            : element.querySelector && element.querySelector(this.groupInfoPanelSelector);
-
-        if (groupInfoPanel) {
-            setTimeout(() => this.processGroupInfoPanel(groupInfoPanel), 100);
+        // Quick check: does this element contain the media icon we're looking for?
+        if (this.findSvgByTitle(element, 'ic-perm-media')) {
+            setTimeout(() => this.processGroupInfoPanel(element), 100);
         }
     }
 
@@ -118,69 +112,67 @@ class WhatsAppGroupIdExtractor {
      * Insert the group ID element into the group info panel
      */
     insertGroupIdElement(panel, groupId) {
-        // Find the "Group created by" section insertion point
-        const insertionPoint = this.findGroupCreatedBySection(panel);
+        // Find the ic-perm-media SVG title element
+        const mediaTitleElement = this.findSvgByTitle(panel, 'ic-perm-media');
 
-        if (insertionPoint) {
+        if (mediaTitleElement) {
             const groupIdElement = this.createGroupIdElement(groupId);
-            insertionPoint.parentNode.insertBefore(groupIdElement, insertionPoint.nextSibling);
-        }
-    }
 
-    /**
-     * Find the "Group created by" section
-     */
-    findGroupCreatedBySection(panel) {
-        // Look for text content containing "Group created by" or "created" 
-        const walker = document.createTreeWalker(
-            panel,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
-
-        let node;
-        while (node = walker.nextNode()) {
-            if (node.textContent.includes('Group created by') ||
-                node.textContent.includes('created by') ||
-                node.textContent.includes('Created by')) {
-                // Find the parent container element
-                let parent = node.parentElement;
-                while (parent && !parent.classList.contains('x106a9eq')) {
-                    parent = parent.parentElement;
-                }
-                return parent;
+            // Tree traversal: go up 9 levels from title to reach media section container
+            let mediaContainer = mediaTitleElement;
+            for (let i = 0; i < 9; i++) {
+                mediaContainer = mediaContainer.parentElement;
+                if (!mediaContainer) return; // Safety check
             }
-        }
 
-        // Fallback: look for media section if group created by section not found
-        return this.findMediaLinksSection(panel);
+            // Get the parent container that holds all sections
+            const sectionsParent = mediaContainer.parentElement;
+            if (!sectionsParent) return;
+
+            // Find the separator div (previous sibling of media section)
+            const separatorDiv = mediaContainer.previousElementSibling;
+            if (!separatorDiv) return;
+
+            // Find the "Group created by" section (previous sibling of separator)
+            const groupCreatedSection = separatorDiv.previousElementSibling;
+            if (!groupCreatedSection) return;
+
+            // Insert Group ID element after the "Group created by" section
+            // This places it between "Group created by" and separator
+            sectionsParent.insertBefore(groupIdElement, separatorDiv);
+        }
     }
 
     /**
-     * Find the "Media, links and docs" section
+     * Find the "Media, links and docs" section using SVG icon identifier
      */
     findMediaLinksSection(panel) {
-        // Look for text content containing "Media, links and docs"
-        const walker = document.createTreeWalker(
-            panel,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
+        // Look for SVG title "ic-perm-media" (language-independent, fast)
+        const titleElement = this.findSvgByTitle(panel, 'ic-perm-media');
 
-        let node;
-        while (node = walker.nextNode()) {
-            if (node.textContent.includes('Media, links and docs')) {
-                // Find the parent container element
-                let parent = node.parentElement;
-                while (parent && !parent.classList.contains('x106a9eq')) {
-                    parent = parent.parentElement;
-                }
-                return parent;
+        if (titleElement) {
+            // Navigate up from title -> svg -> parent elements to find section container
+            let parent = titleElement.closest('svg').parentElement;
+            while (parent && !parent.classList.contains('x13mwh8y')) {
+                parent = parent.parentElement;
             }
+            return parent;
         }
 
+        return null;
+    }
+
+    /**
+     * Optimized method to find SVG title element by text content
+     */
+    findSvgByTitle(container, titleText) {
+        // Direct query for title elements with specific text content
+        const titleElements = container.querySelectorAll('svg > title');
+        for (let titleEl of titleElements) {
+            if (titleEl.textContent.trim() === titleText) {
+                return titleEl;
+            }
+        }
         return null;
     }
 
@@ -192,7 +184,7 @@ class WhatsAppGroupIdExtractor {
         container.className = 'whatsapp-group-id-extractor';
 
         container.innerHTML = `
-      <div class="group-id-horizontal-layout">
+      <div class="group-id-horizontal-layout" style="direction: ltr;">
         <span class="group-id-label">
           Group ID
         </span>
