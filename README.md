@@ -20,8 +20,8 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 
 ## Installation
 
-### Option 1: Chrome Web Store (Coming Soon)
-1. Visit the [Chrome Web Store listing]() 
+### Option 1: Chrome Web Store
+1. Visit the [Chrome Web Store listing](https://chromewebstore.google.com/detail/lndnieincflimcbelmimbndcplbffheh)
 2. Click "Add to Chrome"
 3. Navigate to WhatsApp Web to start using
 
