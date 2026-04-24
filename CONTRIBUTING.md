@@ -12,17 +12,20 @@ whatsapp-groupid-plugin/
 ├── popup.html                 # Extension popup interface
 ├── icons/                     # Extension icons (16, 48, 128px)
 ├── dev_server.py              # Development HTTP server
-├── generate_icons.py          # Icon generation utility
 ├── requirements.txt           # Python dependencies
-├── package.json              # Project metadata
-├── README.md                 # Main documentation
-├── CONTRIBUTING.md           # This file
-├── .gitignore                # Git ignore rules
-└── test/                     # Test suite directory
-    ├── test.html             # Interactive test suite
-    ├── test_group_id.py      # Core extraction tests
-    ├── test_dash_support.py  # Dashed group ID tests
-    └── validate_extension.py # Extension validation
+├── package.json               # Project metadata
+├── README.md                  # Main documentation
+├── CONTRIBUTING.md            # This file
+├── store/                     # Release packages
+│   └── package.sh             # Build script
+├── tmp/                       # Utilities and scratch files
+│   └── generate_icons.py      # Icon generation utility
+└── test/                      # Test suite directory
+    ├── test.html              # Interactive test suite
+    ├── test_group_id.py       # Core extraction & IndexedDB lookup tests
+    ├── test_dash_support.py   # Dashed group ID tests
+    ├── validate_extension.py  # Extension structure validation
+    └── run_all_tests.py       # Run all tests at once
 ```
 
 ## 🚀 Development Setup
@@ -54,14 +57,13 @@ Expected output: ✅ Extension validation successful!
 ### Run All Tests
 
 ```bash
-# Core group ID extraction tests
-python test/test_group_id.py
+# Run the full suite
+python test/run_all_tests.py
 
-# Dashed group ID format tests  
-python test/test_dash_support.py
-
-# Extension structure validation
-python test/validate_extension.py
+# Or run individual test files
+python test/test_group_id.py       # Core extraction & IndexedDB lookup
+python test/test_dash_support.py   # Dashed group ID formats
+python test/validate_extension.py  # Extension structure validation
 ```
 
 ### Interactive Testing
@@ -131,9 +133,10 @@ python dev_server.py --port 8001
 - Check Chrome Developer Console for errors
 
 **Group ID not extracted:**
-- Verify the regex pattern in `content-script.js` line 8
+- Open the browser console and check for errors in `content-script.js`
+- The extension reads the group name from the panel, then looks up the JID in the `model-storage` IndexedDB (`group-metadata` store)
 - Test with `python test/test_group_id.py`
-- Check browser console for WhatsApp DOM structure changes
+- If WhatsApp's DOM structure has changed, check the selectors in `extractGroupNameFromPanel` and `checkForGroupInfoPanel`
 
 **Tests failing:**
 - Ensure Python virtual environment is activated
@@ -150,7 +153,7 @@ python test/validate_extension.py
 **Generate New Icons:**
 ```bash
 # Place your source image in icons/ and run:
-python generate_icons.py
+python tmp/generate_icons.py
 ```
 
 **Check Group ID Regex:**

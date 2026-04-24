@@ -50,7 +50,7 @@ def main():
     
     tests = [
         (f"{venv_python} test/validate_extension.py", "Extension Structure & Manifest Validation"),
-        (f"{venv_python} test/test_group_id.py", "Group ID Extraction Pattern Testing"),
+        (f"{venv_python} test/test_group_id.py", "Group ID Extraction, IndexedDB Lookup & Panel Name Extraction"),
         (f"{venv_python} test/test_dash_support.py", "Dashed Group ID Support Testing"),
     ]
     

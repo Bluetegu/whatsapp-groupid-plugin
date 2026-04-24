@@ -1,5 +1,14 @@
 # WhatsApp Group ID Extractor
 
+> [!IMPORTANT]
+> **Version 1.1.0 is broken and no longer works.**
+> WhatsApp Web removed the DOM attributes that v1.1.0 relied on to extract group IDs.
+> **Please upgrade to v1.2.0**, which uses a new IndexedDB-based approach that works with the current WhatsApp Web.
+>
+> **How to upgrade:**
+> - **If v1.2.0 is already available on the Chrome Web Store** — go to the [Chrome Web Store listing](https://chromewebstore.google.com/detail/lndnieincflimcbelmimbndcplbffheh) and click **Update** (or it will update automatically).
+> - **If the Chrome Web Store still shows v1.1.0** (store review pending) — install directly: download [whatsapp-groupid-plugin-v1.2.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.2.0.zip), extract it, enable Developer mode in `chrome://extensions/`, and click **Load unpacked**.
+
 A Chrome extension that automatically adds WhatsApp group ID information to the group info panel on WhatsApp Web, making it easy to copy group IDs for Openclaw configuration.
 
 *This extension was developed with the assistance of GitHub Copilot.*
@@ -22,11 +31,11 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 
 ### Option 1: Chrome Web Store
 1. Visit the [Chrome Web Store listing](https://chromewebstore.google.com/detail/lndnieincflimcbelmimbndcplbffheh)
-2. Click "Add to Chrome"
+2. Click "Add to Chrome" (make sure the listed version is **1.2.0** — if it still shows 1.1.0, use Option 2 below while the update is under review)
 3. Navigate to WhatsApp Web to start using
 
-### Option 2: Direct Download (Available Now)
-1. Download [whatsapp-groupid-plugin-v1.1.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.1.0.zip)
+### Option 2: Direct Download (Always Up to Date)
+1. Download [whatsapp-groupid-plugin-v1.2.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.2.0.zip)
 2. Extract the ZIP file to a folder
 3. Open Chrome and go to `chrome://extensions/`
 4. Enable "Developer mode" (toggle in top right)
@@ -40,7 +49,7 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 4. Click "Load unpacked" and select the cloned folder
 5. Navigate to [web.whatsapp.com](https://web.whatsapp.com) to start using
 
-> **Note**: Options 2 and 3 require Developer mode, which Chrome will warn you about. This is normal for extensions not installed from the Chrome Web Store.
+> **Note**: Options 2 and 3 require Developer mode, which Chrome will warn you about. This is normal for extensions not installed from the Chrome Web Store. You can switch back to the Chrome Web Store version once v1.2.0 is approved.
 
 ## How to Use
 
@@ -54,15 +63,22 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 
 The extension extracts group IDs in the format: `123456789@g.us`
 
-This is the clean format needed for Openclaw configuration, extracted from WhatsApp's internal data attributes.
+This is the clean format needed for Openclaw configuration. The ID is resolved by looking up the group name (read from the panel header) against WhatsApp's local IndexedDB database (`model-storage` → `group-metadata`), which stores the canonical JID for every group.
 
 ## Technical Details
 
 ### Architecture
 - **Manifest V3**: Uses the latest Chrome extension standard
 - **Content Script**: Runs only on WhatsApp Web pages
-- **DOM Observer**: Watches for group info panel changes
+- **DOM Observer**: Watches for group info panel changes via `MutationObserver`
+- **IndexedDB lookup**: Reads `model-storage → group-metadata` to resolve group JIDs — no DOM attributes required
 - **Clipboard API**: Modern clipboard integration with fallback support
+
+### Group ID Extraction Strategy
+The extension tries three strategies in order, stopping at the first success:
+1. **DOM attributes** (`data-id` / `data-jid`) — legacy; WhatsApp removed these in early 2026
+2. **IndexedDB** — reads the `group-metadata` object store, matches the group subject (name shown in the panel) to return the `@g.us` JID *(primary strategy as of v1.2.0)*
+3. **`localStorage` RecentSearches** — stale fallback for edge cases
 
 ### Browser Support
 - Chrome 88+
@@ -96,10 +112,10 @@ python test/validate_extension.py
 ```
 
 **Test Coverage:**
-- Group ID extraction with dashes support
-- DOM interaction validation
-- Extension structure validation
-- Clipboard functionality testing
+- Group ID regex pattern (including dashes)
+- IndexedDB `group-metadata` lookup logic
+- Group name extraction from panel header (primary selector + aria-label fallback)
+- Extension structure and manifest validation
 
 ### Building
 No build process required - this is a vanilla JavaScript extension.
@@ -127,6 +143,11 @@ The extension requests minimal permissions:
 - `host_permissions`: Limited to `web.whatsapp.com` only
 
 ## Changelog
+
+### Version 1.2.0 (April 2026)
+- 🔑 **New extraction strategy**: group JID is now resolved via IndexedDB (`model-storage → group-metadata`) — fixes breakage after WhatsApp removed `@g.us` JIDs from all DOM attributes
+- 🎯 Group name read from `[data-testid*="group-info-drawer-subject-input-read-only"]` with `aria-label` fallback
+- 🧪 Added tests for IndexedDB lookup logic and panel name-extraction logic
 
 ### Version 1.1.0 (March 2026)
 - ✅ Fixed language compatibility - now works in all WhatsApp Web languages

@@ -7,7 +7,6 @@ class WhatsAppGroupIdExtractor {
     constructor() {
         this.groupIdPattern = /(\d+(?:-\d+)*@g\.us)/;
         this.isInitialized = false;
-
         this.init();
     }
 
@@ -77,34 +76,99 @@ class WhatsAppGroupIdExtractor {
     /**
      * Process the group info panel and add group ID if found
      */
-    processGroupInfoPanel(panel) {
+    async processGroupInfoPanel(panel) {
         // Don't add multiple group ID elements
         if (panel.querySelector('.whatsapp-group-id-extractor')) {
             return;
         }
 
-        const groupId = this.extractGroupId();
+        const groupId = await this.extractGroupId(panel);
         if (groupId) {
             this.insertGroupIdElement(panel, groupId);
         }
     }
 
     /**
-     * Extract group ID from the current page
+     * Extract the group name shown in the info panel header.
      */
-    extractGroupId() {
-        // Look for elements with data-id containing @g.us
-        const elements = document.querySelectorAll('[data-id*="@g.us"]');
+    extractGroupNameFromPanel(panel) {
+        // Primary: read-only subject input (data-testid contains a space so use substring match)
+        const subjectEl = panel.querySelector('[data-testid*="group-info-drawer-subject-input-read-only"]');
+        if (subjectEl) {
+            const text = subjectEl.textContent?.trim();
+            if (text) return text;
+        }
 
-        for (let element of elements) {
-            const dataId = element.getAttribute('data-id');
-            const match = dataId.match(this.groupIdPattern);
+        // Fallback: aria-label on the group profile picture container
+        const picContainer = panel.querySelector('[aria-label^="Group profile picture for"]');
+        if (picContainer) {
+            const match = picContainer.getAttribute('aria-label').match(/^Group profile picture for "(.+)"$/);
+            if (match) return match[1];
+        }
 
-            if (match) {
-                return match[1];
+        return null;
+    }
+
+    /**
+     * Look up group JID in IndexedDB model-storage → group-metadata by subject (group name).
+     */
+    lookupGroupIdByName(groupName) {
+        return new Promise((resolve) => {
+            try {
+                const req = indexedDB.open('model-storage');
+                req.onerror = () => resolve(null);
+                req.onsuccess = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('group-metadata')) {
+                        db.close();
+                        resolve(null);
+                        return;
+                    }
+                    const tx = db.transaction('group-metadata', 'readonly');
+                    const getAll = tx.objectStore('group-metadata').getAll();
+                    getAll.onsuccess = () => {
+                        db.close();
+                        const groups = getAll.result.filter(g => g.id && g.id.includes('@g.us'));
+                        // Exact match first
+                        let match = groups.find(g => g.subject === groupName);
+                        // Fallback: subject starts with the extracted name.
+                        // Handles trailing emoji not captured by textContent
+                        // (e.g. panel shows "Budapest 2025", DB has "Budapest 2025 🇭🇺").
+                        if (!match) {
+                            match = groups.find(g => g.subject?.startsWith(groupName));
+                        }
+                        resolve(match ? match.id : null);
+                    };
+                    getAll.onerror = () => { db.close(); resolve(null); };
+                };
+            } catch (_) {
+                resolve(null);
+            }
+        });
+    }
+
+    /**
+     * Extract group ID for the currently open group chat.
+     * Strategy 1: DOM attributes (legacy).
+     * Strategy 2: IndexedDB model-storage.group-metadata lookup by group name.
+     */
+    async extractGroupId(panel) {
+        // Strategy 1: DOM attributes (legacy)
+        for (const attr of ['data-id', 'data-jid']) {
+            for (const el of document.querySelectorAll(`[${attr}*="@g.us"]`)) {
+                const match = el.getAttribute(attr).match(this.groupIdPattern);
+                if (match) return match[1];
             }
         }
 
+        // Strategy 2: IndexedDB lookup by group name from panel header
+        const groupName = this.extractGroupNameFromPanel(panel);
+        if (groupName) {
+            const id = await this.lookupGroupIdByName(groupName);
+            if (id) return id;
+        }
+
+        console.warn('[WhatsApp Group ID] Could not find group ID via any strategy.');
         return null;
     }
 
@@ -133,33 +197,9 @@ class WhatsAppGroupIdExtractor {
             const separatorDiv = mediaContainer.previousElementSibling;
             if (!separatorDiv) return;
 
-            // Find the "Group created by" section (previous sibling of separator)
-            const groupCreatedSection = separatorDiv.previousElementSibling;
-            if (!groupCreatedSection) return;
-
-            // Insert Group ID element after the "Group created by" section
-            // This places it between "Group created by" and separator
+            // Insert Group ID element before the separator (after "Group created by" section)
             sectionsParent.insertBefore(groupIdElement, separatorDiv);
         }
-    }
-
-    /**
-     * Find the "Media, links and docs" section using SVG icon identifier
-     */
-    findMediaLinksSection(panel) {
-        // Look for SVG title "ic-perm-media" (language-independent, fast)
-        const titleElement = this.findSvgByTitle(panel, 'ic-perm-media');
-
-        if (titleElement) {
-            // Navigate up from title -> svg -> parent elements to find section container
-            let parent = titleElement.closest('svg').parentElement;
-            while (parent && !parent.classList.contains('x13mwh8y')) {
-                parent = parent.parentElement;
-            }
-            return parent;
-        }
-
-        return null;
     }
 
     /**
@@ -185,15 +225,9 @@ class WhatsAppGroupIdExtractor {
 
         container.innerHTML = `
       <div class="group-id-horizontal-layout" style="direction: ltr;">
-        <span class="group-id-label">
-          Group ID
-        </span>
-        <span class="group-id-value">
-          ${groupId}
-        </span>
-        <button class="copy-group-id-btn" 
-                title="Copy Group ID" 
-                data-group-id="${groupId}">
+        <span class="group-id-label">Group ID</span>
+        <span class="group-id-value"></span>
+        <button class="copy-group-id-btn" title="Copy Group ID">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" fill="currentColor" opacity="0.6"/>
           </svg>
@@ -201,20 +235,13 @@ class WhatsAppGroupIdExtractor {
       </div>
     `;
 
-        // Add click event listener to copy button
+        container.querySelector('.group-id-value').textContent = groupId;
+
         const copyBtn = container.querySelector('.copy-group-id-btn');
+        copyBtn.setAttribute('data-group-id', groupId);
         copyBtn.addEventListener('click', (e) => {
             e.preventDefault();
             this.copyToClipboard(groupId, copyBtn);
-        });
-
-        // Add hover effects
-        copyBtn.addEventListener('mouseenter', () => {
-            copyBtn.style.background = 'var(--background-default-hover, #f0f2f5)';
-        });
-
-        copyBtn.addEventListener('mouseleave', () => {
-            copyBtn.style.background = 'none';
         });
 
         return container;
@@ -236,28 +263,17 @@ class WhatsAppGroupIdExtractor {
      * Show visual feedback for copy operation
      */
     showCopyFeedback(button, success) {
-        const svg = button.querySelector('svg');
-        const originalSvg = svg.outerHTML;
+        const originalHTML = button.innerHTML;
+        const color = success ? '#00a884' : '#f15c6d';
+        const path = success
+            ? `<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="${color}"/>`
+            : `<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="${color}"/>`;
 
-        // Replace with checkmark or error icon
-        if (success) {
-            svg.outerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="#00a884"/>
-        </svg>
-      `;
-            button.style.color = '#00a884';
-        } else {
-            svg.outerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#f15c6d"/>
-        </svg>
-      `;
-            button.style.color = '#f15c6d';
-        }
+        button.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">${path}</svg>`;
+        button.style.color = color;
 
         setTimeout(() => {
-            button.innerHTML = originalSvg;
+            button.innerHTML = originalHTML;
             button.style.color = '';
         }, 1500);
     }
