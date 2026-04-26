@@ -73,14 +73,14 @@ Permissions:
 - activeTab: Required to access the current WhatsApp Web tab for group ID extraction
 - web.whatsapp.com: Ensures the extension only runs on WhatsApp Web for security
 
-Last Updated: March 2, 2026
+Last Updated: April 26, 2026
 
 === ADDITIONAL INFORMATION ===
 
 Website: https://github.com/Bluetegu/whatsapp-groupid-plugin
 Support: https://github.com/Bluetegu/whatsapp-groupid-plugin/issues
 
-Version: 1.1.0
+Version: 1.3.0
 Minimum Chrome Version: 88
 
 Pricing: Free

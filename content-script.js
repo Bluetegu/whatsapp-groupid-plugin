@@ -173,33 +173,30 @@ class WhatsAppGroupIdExtractor {
     }
 
     /**
-     * Insert the group ID element into the group info panel
+     * Insert the group ID element into the group info panel.
+     *
+     * Only depends on the ic-perm-media SVG title already being found.
+     * Walks up to the nearest <section> ancestor, then finds its direct
+     * child that contains the SVG, and inserts before that row — no
+     * fixed-depth traversal or sibling assumptions.
      */
     insertGroupIdElement(panel, groupId) {
-        // Find the ic-perm-media SVG title element
         const mediaTitleElement = this.findSvgByTitle(panel, 'ic-perm-media');
+        if (!mediaTitleElement) return;
 
-        if (mediaTitleElement) {
-            const groupIdElement = this.createGroupIdElement(groupId);
+        // Find the nearest <section> ancestor (the drawer body)
+        const section = mediaTitleElement.closest('section');
+        if (!section) return;
 
-            // Tree traversal: go up 9 levels from title to reach media section container
-            let mediaContainer = mediaTitleElement;
-            for (let i = 0; i < 9; i++) {
-                mediaContainer = mediaContainer.parentElement;
-                if (!mediaContainer) return; // Safety check
-            }
-
-            // Get the parent container that holds all sections
-            const sectionsParent = mediaContainer.parentElement;
-            if (!sectionsParent) return;
-
-            // Find the separator div (previous sibling of media section)
-            const separatorDiv = mediaContainer.previousElementSibling;
-            if (!separatorDiv) return;
-
-            // Insert Group ID element before the separator (after "Group created by" section)
-            sectionsParent.insertBefore(groupIdElement, separatorDiv);
+        // Walk up from the title to find the direct child of <section>
+        let mediaRow = mediaTitleElement;
+        while (mediaRow.parentElement && mediaRow.parentElement !== section) {
+            mediaRow = mediaRow.parentElement;
         }
+        if (mediaRow.parentElement !== section) return;
+
+        // Insert our element directly before the media row
+        section.insertBefore(this.createGroupIdElement(groupId), mediaRow);
     }
 
     /**

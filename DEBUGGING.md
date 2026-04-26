@@ -183,14 +183,19 @@ class DebugWhatsAppExtractor {
         
         console.log("✅ Both group ID and media section found - extension should work");
         
-        // Test DOM traversal
-        let mediaContainer = mediaTitleElement;
-        for (let i = 0; i < 9; i++) {
-            mediaContainer = mediaContainer.parentElement;
-            if (!mediaContainer) {
-                console.log("❌ DOM traversal failed at level", i+1);
-                return;
-            }
+        // Test DOM traversal (v1.3.0+: closest('section') + walk-up)
+        const section = mediaTitleElement.closest('section');
+        if (!section) {
+            console.log("❌ DOM traversal failed — no parent <section> found");
+            return;
+        }
+        let mediaRow = mediaTitleElement;
+        while (mediaRow.parentElement && mediaRow.parentElement !== section) {
+            mediaRow = mediaRow.parentElement;
+        }
+        if (mediaRow.parentElement !== section) {
+            console.log("❌ DOM traversal failed — walk-up did not reach section");
+            return;
         }
         
         console.log("✅ DOM traversal successful");
@@ -325,13 +330,13 @@ When there are issues, the diagnostic will pinpoint exactly what's missing or br
 1. **Content Script Injection**: Runs on web.whatsapp.com pages
 2. **MutationObserver**: Watches for DOM changes (group info panel opening)
 3. **SVG Detection**: Looks for `svg > title` elements with text "ic-perm-media"
-4. **DOM Traversal**: Navigates up 9 parent levels to find container
-5. **Group ID Extraction**: Searches `[data-id*="@g.us"]` elements for ID pattern
+4. **DOM Traversal**: Uses `closest('section')` to find the drawer body, then walks up from the title until reaching its direct child of that section (v1.3.0+; replaces hardcoded 9-level traversal)
+5. **Group ID Extraction**: Reads `model-storage → group-metadata` IndexedDB, matches group subject to return the `@g.us` JID (v1.2.0+; replaces `data-id` DOM attribute lookup)
 6. **Element Injection**: Inserts group ID display before media section
 
 **Critical Dependencies:**
 - WhatsApp Web must be fully loaded
 - Group info panel must be open
 - SVG structure must contain "ic-perm-media" title
-- DOM structure must allow 9-level parent traversal
-- Group elements must have `data-id` attributes with @g.us patterns
+- Drawer body wrapped in a `<section>` element
+- IndexedDB `model-storage` must contain the group in `group-metadata` object store
