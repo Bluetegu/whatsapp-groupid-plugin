@@ -1,15 +1,12 @@
 # WhatsApp Group ID Extractor
 
 > [!IMPORTANT]
-> **Version 1.2.0 has a broken group info panel insertion.**
-> WhatsApp Web restructured the group info panel DOM, breaking the element insertion logic in v1.2.0.
-> **Please upgrade to v1.3.0**, which fixes the insertion with a more robust traversal approach.
->
-> (v1.1.0 is also broken — WhatsApp removed the DOM attributes it relied on for group ID extraction.)
+> **WhatsApp Web updated its DOM and broke the group ID row in v1.3.x** — the row stops appearing after the update.
+> **Please upgrade to v1.4.0**, which restores functionality and adds more robust fallback strategies so future WhatsApp changes are less likely to break it again.
 >
 > **How to upgrade:**
-> - **If v1.3.0 is already available on the Chrome Web Store** — go to the [Chrome Web Store listing](https://chromewebstore.google.com/detail/lndnieincflimcbelmimbndcplbffheh) and click **Update** (or it will update automatically).
-> - **If the Chrome Web Store still shows an older version** (store review pending) — install directly: download [whatsapp-groupid-plugin-v1.3.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.3.0.zip), extract it, enable Developer mode in `chrome://extensions/`, and click **Load unpacked**.
+> - **If v1.4.0 is already available on the Chrome Web Store** — go to the [Chrome Web Store listing](https://chromewebstore.google.com/detail/lndnieincflimcbelmimbndcplbffheh) and click **Update** (or it will update automatically).
+> - **If the Chrome Web Store still shows an older version** (store review pending) — install directly: download [whatsapp-groupid-plugin-v1.4.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.4.0.zip), extract it, enable Developer mode in `chrome://extensions/`, and click **Load unpacked**.
 
 A Chrome extension that automatically adds WhatsApp group ID information to the group info panel on WhatsApp Web, making it easy to copy group IDs for Openclaw configuration.
 
@@ -37,7 +34,7 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 3. Navigate to WhatsApp Web to start using
 
 ### Option 2: Direct Download (Always Up to Date)
-1. Download [whatsapp-groupid-plugin-v1.3.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.3.0.zip)
+1. Download [whatsapp-groupid-plugin-v1.4.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.4.0.zip)
 2. Extract the ZIP file to a folder
 3. Open Chrome and go to `chrome://extensions/`
 4. Enable "Developer mode" (toggle in top right)
@@ -51,7 +48,7 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 4. Click "Load unpacked" and select the cloned folder
 5. Navigate to [web.whatsapp.com](https://web.whatsapp.com) to start using
 
-> **Note**: Options 2 and 3 require Developer mode, which Chrome will warn you about. This is normal for extensions not installed from the Chrome Web Store. You can switch back to the Chrome Web Store version once v1.3.0 is approved.
+> **Note**: Options 2 and 3 require Developer mode, which Chrome will warn you about. This is normal for extensions not installed from the Chrome Web Store. You can switch back to the Chrome Web Store version once v1.4.0 is approved.
 
 ## How to Use
 
@@ -77,10 +74,14 @@ This is the clean format needed for Openclaw configuration. The ID is resolved b
 - **Clipboard API**: Modern clipboard integration with fallback support
 
 ### Group ID Extraction Strategy
-The extension tries three strategies in order, stopping at the first success:
+The extension tries two strategies in order, stopping at the first success:
 1. **DOM attributes** (`data-id` / `data-jid`) — legacy; WhatsApp removed these in early 2026
-2. **IndexedDB** — reads the `group-metadata` object store, matches the group subject (name shown in the panel) to return the `@g.us` JID *(primary strategy as of v1.2.0)*
-3. **`localStorage` RecentSearches** — stale fallback for edge cases
+2. **IndexedDB** — reads the `group-metadata` object store, matches the group name (read from the panel header) to return the `@g.us` JID *(primary strategy as of v1.2.0)*
+
+The group name is read from the panel header using three fallbacks:
+1. `[data-testid*="group-info-drawer-subject-input-read-only"]` — most direct
+2. `aria-label` on the profile picture element — locale-independent (prefix is always English)
+3. **SVG structural walk** — attribute-free; walks up from the `ic-person-add` icon until finding an ancestor that also contains `ic-search`, then reads the first non-empty sibling text (SVG titles stripped) — works even if WhatsApp removes all `data-testid` attributes
 
 ### Browser Support
 - Chrome 88+
@@ -145,6 +146,15 @@ The extension requests minimal permissions:
 - `host_permissions`: Limited to `web.whatsapp.com` only
 
 ## Changelog
+
+### Version 1.4.0 (April 2026)
+*Adapting to a WhatsApp Web DOM update that moved the group name into a different subtree, causing the group ID row to stop appearing.*
+- 🔄 **Restored group ID row after WhatsApp DOM update**: WhatsApp moved the group name element into a separate subtree from the panel body. Updated all name selectors to search the full document rather than the observer-triggered node
+- 🛡 **Two new group name fallback strategies**: `aria-label` on the profile picture element (locale-independent), and a fully attribute-free SVG structural walk using `ic-person-add` + `ic-search` icons as anchors — works even if WhatsApp removes all `data-testid` attributes
+- 🔧 **Hardened insertion point traversal**: replaced `closest('section')` with a sibling-count walk-up — no tag names, no `data-testid`, no fixed depth — more resilient to future DOM restructuring
+- 🔧 **SVG title bleed fix**: icon title text (e.g. "pencil-refreshed") no longer contaminates the group name when reading sibling text nodes
+- 🔎 **`debug_group.js` added to repo**: console diagnostic script committed at repo root; independently tests all three name strategies and logs each intermediate result
+- 📄 **DEBUGGING.md** rewritten as a lean reference guide with a WhatsApp implementation dependency table
 
 ### Version 1.3.0 (April 2026)
 - 🛠 **Fixed group info panel insertion**: WhatsApp Web restructured the panel DOM, breaking the v1.2.0 element insertion logic. Replaced hardcoded 9-level `parentElement` traversal with `closest('section')` + walk-up loop — zero fixed depth, zero sibling assumptions.

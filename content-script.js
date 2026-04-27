@@ -78,7 +78,7 @@ class WhatsAppGroupIdExtractor {
      */
     async processGroupInfoPanel(panel) {
         // Don't add multiple group ID elements
-        if (panel.querySelector('.whatsapp-group-id-extractor')) {
+        if (document.querySelector('.whatsapp-group-id-extractor')) {
             return;
         }
 
@@ -92,18 +92,53 @@ class WhatsAppGroupIdExtractor {
      * Extract the group name shown in the info panel header.
      */
     extractGroupNameFromPanel(panel) {
-        // Primary: read-only subject input (data-testid contains a space so use substring match)
-        const subjectEl = panel.querySelector('[data-testid*="group-info-drawer-subject-input-read-only"]');
+        // Search document-wide: the subject input and profile picture are in the drawer
+        // header, which is a different DOM subtree from the body node that triggered
+        // the MutationObserver (the node containing ic-perm-media).
+        const subjectEl = document.querySelector('[data-testid*="group-info-drawer-subject-input-read-only"]');
         if (subjectEl) {
             const text = subjectEl.textContent?.trim();
             if (text) return text;
         }
 
-        // Fallback: aria-label on the group profile picture container
-        const picContainer = panel.querySelector('[aria-label^="Group profile picture for"]');
+        // Fallback 1: aria-label on the group profile picture container
+        const picContainer = document.querySelector('[aria-label^="Group profile picture for"]');
         if (picContainer) {
             const match = picContainer.getAttribute('aria-label').match(/^Group profile picture for "(.+)"$/);
             if (match) return match[1];
+        }
+
+        // Fallback 2: walk up from the ic-person-add SVG until reaching the tightest
+        // ancestor that also contains ic-search (the buttons row). Then keep walking
+        // upward, checking siblings at each level — the group name may not be an
+        // immediate sibling of the buttons row.
+        const personAddSvg = [...document.querySelectorAll('svg > title')]
+            .find(t => t.textContent.trim() === 'ic-person-add')?.closest('svg');
+        if (personAddSvg) {
+            let buttonsRow = personAddSvg;
+            while (buttonsRow.parentElement) {
+                buttonsRow = buttonsRow.parentElement;
+                if ([...buttonsRow.querySelectorAll('svg > title')]
+                    .some(t => t.textContent.trim() === 'ic-search')) break;
+            }
+            let container = buttonsRow;
+            let walkLimit = 6;
+            while (container.parentElement && walkLimit-- > 0) {
+                const parent = container.parentElement;
+                for (const child of parent.children) {
+                    if (child === container || child.contains(container)) continue;
+                    // Clone and strip SVG elements so icon titles don't bleed into textContent
+                    const clone = child.cloneNode(true);
+                    clone.querySelectorAll('svg').forEach(s => s.remove());
+                    const text = clone.textContent?.trim();
+                    if (text) {
+                        const firstLine = text.split('\n').map(l => l.trim()).find(l => l);
+                        if (firstLine) return firstLine;
+                    }
+                }
+                container = parent;
+                if (container.tagName === 'BODY') break;
+            }
         }
 
         return null;
@@ -176,27 +211,23 @@ class WhatsAppGroupIdExtractor {
      * Insert the group ID element into the group info panel.
      *
      * Only depends on the ic-perm-media SVG title already being found.
-     * Walks up to the nearest <section> ancestor, then finds its direct
-     * child that contains the SVG, and inserts before that row — no
-     * fixed-depth traversal or sibling assumptions.
+     * Walks up from the SVG title until the parent element has >= 4 children —
+     * that is the rows container (profile pic, description, separator, media row,
+     * stars, notifications, …). Inner layout divs have only 2–3 children.
+     * No tag names, data-testid, or fixed depth are used.
      */
     insertGroupIdElement(panel, groupId) {
         const mediaTitleElement = this.findSvgByTitle(panel, 'ic-perm-media');
         if (!mediaTitleElement) return;
 
-        // Find the nearest <section> ancestor (the drawer body)
-        const section = mediaTitleElement.closest('section');
-        if (!section) return;
-
-        // Walk up from the title to find the direct child of <section>
+        // Walk up until the parent is the rows container (many siblings)
         let mediaRow = mediaTitleElement;
-        while (mediaRow.parentElement && mediaRow.parentElement !== section) {
+        while (mediaRow.parentElement && mediaRow.parentElement.children.length < 4) {
             mediaRow = mediaRow.parentElement;
         }
-        if (mediaRow.parentElement !== section) return;
+        if (!mediaRow.parentElement) return;
 
-        // Insert our element directly before the media row
-        section.insertBefore(this.createGroupIdElement(groupId), mediaRow);
+        mediaRow.parentElement.insertBefore(this.createGroupIdElement(groupId), mediaRow);
     }
 
     /**
