@@ -29,7 +29,9 @@
     console.group('Step 2: Extract group name from panel');
 
     // Primary selector
-    const subjectEl = document.querySelector('[data-testid*="group-info-drawer-subject-input-read-only"]');
+    // Matches both group panels (group-info-drawer-subject-input-read-only)
+    // and community panels (community-home-subject-input-read-only)
+    const subjectEl = document.querySelector('[data-testid*="subject-input-read-only"]');
     console.log('Subject element (data-testid*=):', subjectEl);
     const subjectText = subjectEl?.textContent?.trim() ?? null;
     console.log('Subject text:', subjectText);
@@ -54,8 +56,9 @@
         let buttonsRow = personAddSvg;
         while (buttonsRow.parentElement) {
             buttonsRow = buttonsRow.parentElement;
+            // ic-search = regular group panel; ic-group-add = community panel
             if ([...buttonsRow.querySelectorAll('svg > title')]
-                .some(t => t.textContent.trim() === 'ic-search')) break;
+                .some(t => ['ic-search', 'ic-group-add'].includes(t.textContent.trim()))) break;
         }
         console.log('Buttons row (contains ic-search):', buttonsRow);
         // Walk upward from buttonsRow, checking siblings at each level
@@ -66,6 +69,8 @@
             console.log(`Checking parent (${parent.children.length} children):`, parent);
             for (const child of parent.children) {
                 if (child === container || child.contains(container)) continue;
+                // Skip the group/community picture picker area (shows "Add group icon" when no photo set)
+                if (child.querySelector('[data-testid="group-pic-picker"], [data-testid="community-pic-picker"]')) continue;
                 // Clone and strip SVG elements so icon titles don't bleed into textContent
                 const clone = child.cloneNode(true);
                 clone.querySelectorAll('svg').forEach(s => s.remove());

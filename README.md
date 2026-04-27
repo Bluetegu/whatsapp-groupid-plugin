@@ -1,12 +1,11 @@
 # WhatsApp Group ID Extractor
 
 > [!IMPORTANT]
-> **WhatsApp Web updated its DOM and broke the group ID row in v1.3.x** — the row stops appearing after the update.
-> **Please upgrade to v1.4.0**, which restores functionality and adds more robust fallback strategies so future WhatsApp changes are less likely to break it again.
+> **Please ensure you are on v1.5.0** for the latest fixes including community panel support and groups without a picture.
 >
 > **How to upgrade:**
-> - **If v1.4.0 is already available on the Chrome Web Store** — go to the [Chrome Web Store listing](https://chromewebstore.google.com/detail/lndnieincflimcbelmimbndcplbffheh) and click **Update** (or it will update automatically).
-> - **If the Chrome Web Store still shows an older version** (store review pending) — install directly: download [whatsapp-groupid-plugin-v1.4.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.4.0.zip), extract it, enable Developer mode in `chrome://extensions/`, and click **Load unpacked**.
+> - **If v1.5.0 is already available on the Chrome Web Store** — go to the [Chrome Web Store listing](https://chromewebstore.google.com/detail/lndnieincflimcbelmimbndcplbffheh) and click **Update** (or it will update automatically).
+> - **If the Chrome Web Store still shows an older version** (store review pending) — install directly: download [whatsapp-groupid-plugin-v1.5.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.5.0.zip), extract it, enable Developer mode in `chrome://extensions/`, and click **Load unpacked**.
 
 A Chrome extension that automatically adds WhatsApp group ID information to the group info panel on WhatsApp Web, making it easy to copy group IDs for Openclaw configuration.
 
@@ -30,11 +29,11 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 
 ### Option 1: Chrome Web Store
 1. Visit the [Chrome Web Store listing](https://chromewebstore.google.com/detail/lndnieincflimcbelmimbndcplbffheh)
-2. Click "Add to Chrome" (make sure the listed version is **1.3.0** — if it still shows an older version, use Option 2 below while the update is under review)
+2. Click "Add to Chrome" (make sure the listed version is **1.5.0** — if it still shows an older version, use Option 2 below while the update is under review)
 3. Navigate to WhatsApp Web to start using
 
 ### Option 2: Direct Download (Always Up to Date)
-1. Download [whatsapp-groupid-plugin-v1.4.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.4.0.zip)
+1. Download [whatsapp-groupid-plugin-v1.5.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.5.0.zip)
 2. Extract the ZIP file to a folder
 3. Open Chrome and go to `chrome://extensions/`
 4. Enable "Developer mode" (toggle in top right)
@@ -79,9 +78,9 @@ The extension tries two strategies in order, stopping at the first success:
 2. **IndexedDB** — reads the `group-metadata` object store, matches the group name (read from the panel header) to return the `@g.us` JID *(primary strategy as of v1.2.0)*
 
 The group name is read from the panel header using three fallbacks:
-1. `[data-testid*="group-info-drawer-subject-input-read-only"]` — most direct
+1. `[data-testid*="subject-input-read-only"]` — matches both group panels (`group-info-drawer-subject-input-read-only`) and community panels (`community-home-subject-input-read-only`)
 2. `aria-label` on the profile picture element — locale-independent (prefix is always English)
-3. **SVG structural walk** — attribute-free; walks up from the `ic-person-add` icon until finding an ancestor that also contains `ic-search`, then reads the first non-empty sibling text (SVG titles stripped) — works even if WhatsApp removes all `data-testid` attributes
+3. **SVG structural walk** — attribute-free; walks up from the `ic-person-add` icon until finding an ancestor that also contains `ic-search` or `ic-group-add` (community panels), then reads the first non-empty sibling text (SVG titles and picture-picker element stripped) — works even if WhatsApp removes all `data-testid` attributes
 
 ### Browser Support
 - Chrome 88+
@@ -146,6 +145,12 @@ The extension requests minimal permissions:
 - `host_permissions`: Limited to `web.whatsapp.com` only
 
 ## Changelog
+
+### Version 1.5.0 (April 2026)
+- 🌐 **Community panel support**: The group ID row now appears in Community info panels (`data-testid="community-home-subject-input-read-only"`) in addition to regular group panels
+- 🖼 **Fix for groups without a profile picture**: Strategy 3 (SVG walk) no longer mistakes "Add group icon" for the group name when no picture is set
+- 🔧 **Strategy 1 broadened**: selector changed from `*="group-info-drawer-subject-input-read-only"` to `*="subject-input-read-only"` to match all panel types
+- 🔧 **Strategy 3 anchor expanded**: `ic-group-add` added alongside `ic-search` as a valid buttons-row anchor for community panels
 
 ### Version 1.4.0 (April 2026)
 *Adapting to a WhatsApp Web DOM update that moved the group name into a different subtree, causing the group ID row to stop appearing.*

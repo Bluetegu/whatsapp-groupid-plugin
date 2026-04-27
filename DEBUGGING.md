@@ -68,16 +68,16 @@ No tag names, `data-testid`, or fixed depth are used — only `ic-perm-media` an
 
 ## WhatsApp implementation dependencies
 
-| Dependency | Used for | Risk | Fallback? |
-| --- | --- | --- | --- |
-| `data-testid="app"` or `#app` | Startup gate — wait for WhatsApp to load | Low | No (failure = no observer) |
-| SVG `<title>ic-perm-media</title>` | Detect group info panel opened | Medium | No |
-| SVG `<title>ic-perm-media</title>` | Insertion point walk-up anchor | Medium | No |
-| `[data-testid*="group-info-drawer-subject-input-read-only"]` | Name extraction strategy 1 (primary) | Medium | Yes → strategies 2 & 3 |
-| `[aria-label^="Group profile picture for"]` + regex `"..."` | Name extraction strategy 2 | Medium | Yes → strategy 3 |
-| SVG `<title>ic-person-add</title>` + `<title>ic-search</title>` | Name extraction strategy 3 (SVG structural walk) | Medium | No (last fallback) |
-| IndexedDB database `model-storage` | Group JID lookup | **High** | No |
-| Object store `group-metadata` | Group JID lookup | **High** | No |
-| Record fields `id` (`@g.us`) and `subject` | Group JID lookup | **High** | No |
-| `data-id` / `data-jid` attributes with `@g.us` | Legacy group ID extraction | Low | Yes → IndexedDB |
+| Dependency                                                      | Used for                                         | Risk     | Fallback?                  |
+| --------------------------------------------------------------- | ------------------------------------------------ | -------- | -------------------------- |
+| `data-testid="app"` or `#app`                                   | Startup gate — wait for WhatsApp to load         | Low      | No (failure = no observer) |
+| SVG `<title>ic-perm-media</title>`                              | Detect group info panel opened                   | Medium   | No                         |
+| SVG `<title>ic-perm-media</title>`                              | Insertion point walk-up anchor                   | Medium   | No                         |
+| `[data-testid*="group-info-drawer-subject-input-read-only"]`    | Name extraction strategy 1 (primary)             | Medium   | Yes → strategies 2 & 3     |
+| `[aria-label^="Group profile picture for"]` + regex `"..."`     | Name extraction strategy 2                       | Medium   | Yes → strategy 3           |
+| SVG `<title>ic-person-add</title>` + `<title>ic-search</title>` | Name extraction strategy 3 (SVG structural walk) | Medium   | No (last fallback)         |
+| IndexedDB database `model-storage`                              | Group JID lookup                                 | **High** | No                         |
+| Object store `group-metadata`                                   | Group JID lookup                                 | **High** | No                         |
+| Record fields `id` (`@g.us`) and `subject`                      | Group JID lookup                                 | **High** | No                         |
+| `data-id` / `data-jid` attributes with `@g.us`                  | Legacy group ID extraction                       | Low      | Yes → IndexedDB            |
 

@@ -95,7 +95,9 @@ class WhatsAppGroupIdExtractor {
         // Search document-wide: the subject input and profile picture are in the drawer
         // header, which is a different DOM subtree from the body node that triggered
         // the MutationObserver (the node containing ic-perm-media).
-        const subjectEl = document.querySelector('[data-testid*="group-info-drawer-subject-input-read-only"]');
+        // Matches both group panels (group-info-drawer-subject-input-read-only)
+        // and community panels (community-home-subject-input-read-only)
+        const subjectEl = document.querySelector('[data-testid*="subject-input-read-only"]');
         if (subjectEl) {
             const text = subjectEl.textContent?.trim();
             if (text) return text;
@@ -118,8 +120,9 @@ class WhatsAppGroupIdExtractor {
             let buttonsRow = personAddSvg;
             while (buttonsRow.parentElement) {
                 buttonsRow = buttonsRow.parentElement;
+                // ic-search = regular group panel; ic-group-add = community panel
                 if ([...buttonsRow.querySelectorAll('svg > title')]
-                    .some(t => t.textContent.trim() === 'ic-search')) break;
+                    .some(t => ['ic-search', 'ic-group-add'].includes(t.textContent.trim()))) break;
             }
             let container = buttonsRow;
             let walkLimit = 6;
@@ -127,6 +130,8 @@ class WhatsAppGroupIdExtractor {
                 const parent = container.parentElement;
                 for (const child of parent.children) {
                     if (child === container || child.contains(container)) continue;
+                    // Skip the group/community picture picker area (shows "Add group icon" when no photo set)
+                    if (child.querySelector('[data-testid="group-pic-picker"], [data-testid="community-pic-picker"]')) continue;
                     // Clone and strip SVG elements so icon titles don't bleed into textContent
                     const clone = child.cloneNode(true);
                     clone.querySelectorAll('svg').forEach(s => s.remove());
