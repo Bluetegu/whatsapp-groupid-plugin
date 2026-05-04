@@ -1,11 +1,11 @@
 # WhatsApp Group ID Extractor
 
 > [!IMPORTANT]
-> **Please ensure you are on v1.5.0** for the latest fixes including community panel support and groups without a picture.
+> **Please ensure you are on v1.6.0** for the latest fixes including correct extraction of group names that begin or end with emoji.
 >
 > **How to upgrade:**
-> - **If v1.5.0 is already available on the Chrome Web Store** — go to the [Chrome Web Store listing](https://chromewebstore.google.com/detail/lndnieincflimcbelmimbndcplbffheh) and click **Update** (or it will update automatically).
-> - **If the Chrome Web Store still shows an older version** (store review pending) — install directly: download [whatsapp-groupid-plugin-v1.5.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.5.0.zip), extract it, enable Developer mode in `chrome://extensions/`, and click **Load unpacked**.
+> - **If v1.6.0 is already available on the Chrome Web Store** — go to the [Chrome Web Store listing](https://chromewebstore.google.com/detail/lndnieincflimcbelmimbndcplbffheh) and click **Update** (or it will update automatically).
+> - **If the Chrome Web Store still shows an older version** (store review pending) — install directly: download [whatsapp-groupid-plugin-v1.6.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.6.0.zip), extract it, enable Developer mode in `chrome://extensions/`, and click **Load unpacked**.
 
 A Chrome extension that automatically adds WhatsApp group ID information to the group info panel on WhatsApp Web, making it easy to copy group IDs for Openclaw configuration.
 
@@ -33,7 +33,7 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 3. Navigate to WhatsApp Web to start using
 
 ### Option 2: Direct Download (Always Up to Date)
-1. Download [whatsapp-groupid-plugin-v1.5.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.5.0.zip)
+1. Download [whatsapp-groupid-plugin-v1.6.0.zip](https://github.com/Bluetegu/whatsapp-groupid-plugin/raw/master/store/whatsapp-groupid-plugin-v1.6.0.zip)
 2. Extract the ZIP file to a folder
 3. Open Chrome and go to `chrome://extensions/`
 4. Enable "Developer mode" (toggle in top right)
@@ -47,7 +47,7 @@ A Chrome extension that automatically adds WhatsApp group ID information to the 
 4. Click "Load unpacked" and select the cloned folder
 5. Navigate to [web.whatsapp.com](https://web.whatsapp.com) to start using
 
-> **Note**: Options 2 and 3 require Developer mode, which Chrome will warn you about. This is normal for extensions not installed from the Chrome Web Store. You can switch back to the Chrome Web Store version once v1.4.0 is approved.
+> **Note**: Options 2 and 3 require Developer mode, which Chrome will warn you about. This is normal for extensions not installed from the Chrome Web Store. You can switch back to the Chrome Web Store version once v1.6.0 is approved.
 
 ## How to Use
 
@@ -145,6 +145,11 @@ The extension requests minimal permissions:
 - `host_permissions`: Limited to `web.whatsapp.com` only
 
 ## Changelog
+
+### Version 1.6.0 (May 2026)
+- 🔤 **Fix for group names with leading emoji**: Group names whose emoji appears at the start (e.g. `🟠 My Group`) were losing the emoji when read from the panel header, causing the IndexedDB lookup to fail. This is common in RTL groups where the emoji is typed first. All three name-extraction paths now walk the DOM child nodes and recover emoji from `<img alt="…">` elements that WhatsApp Web uses to render them. Trailing emoji were already partially handled; this fix covers the leading case and makes all positions reliable
+- 🛡 **Emoji-stripped fallback in IndexedDB lookup**: Added a second matching tier that strips all emoji from both the extracted name and each IndexedDB subject before comparing — supersedes and replaces the previous `startsWith` fallback, with better precision and no false-match risk
+- 🔧 **Extracted shared helper**: Duplicate node-walking logic consolidated into a single `getTextWithEmoji()` method
 
 ### Version 1.5.0 (April 2026)
 - 🌐 **Community panel support**: The group ID row now appears in Community info panels (`data-testid="community-home-subject-input-read-only"`) in addition to regular group panels

@@ -89,6 +89,29 @@ class WhatsAppGroupIdExtractor {
     }
 
     /**
+     * Walk an element's subtree and return its full text content, substituting
+     * the alt/data-plain-text attribute of any <img> for the image node.
+     * This recovers emoji characters that WhatsApp Web renders as <img> elements
+     * and which would be silently dropped by a plain textContent read.
+     */
+    getTextWithEmoji(el) {
+        let result = '';
+        const walk = (node) => {
+            for (const child of node.childNodes) {
+                if (child.nodeType === Node.TEXT_NODE) {
+                    result += child.nodeValue;
+                } else if (child.nodeName === 'IMG') {
+                    result += child.getAttribute('alt') || child.getAttribute('data-plain-text') || '';
+                } else {
+                    walk(child);
+                }
+            }
+        };
+        walk(el);
+        return result;
+    }
+
+    /**
      * Extract the group name shown in the info panel header.
      */
     extractGroupNameFromPanel(panel) {
@@ -99,7 +122,10 @@ class WhatsAppGroupIdExtractor {
         // and community panels (community-home-subject-input-read-only)
         const subjectEl = document.querySelector('[data-testid*="subject-input-read-only"]');
         if (subjectEl) {
-            const text = subjectEl.textContent?.trim();
+            // Walk child nodes so that emoji rendered as <img alt="🟠"> are included.
+            // Plain textContent skips <img> elements, causing a mismatch with the
+            // IndexedDB subject field which stores the real emoji character.
+            const text = this.getTextWithEmoji(subjectEl).trim();
             if (text) return text;
         }
 
@@ -132,10 +158,11 @@ class WhatsAppGroupIdExtractor {
                     if (child === container || child.contains(container)) continue;
                     // Skip the group/community picture picker area (shows "Add group icon" when no photo set)
                     if (child.querySelector('[data-testid="group-pic-picker"], [data-testid="community-pic-picker"]')) continue;
-                    // Clone and strip SVG elements so icon titles don't bleed into textContent
+                    // Strip SVG elements so icon titles don't bleed into the name,
+                    // then walk child nodes to reconstruct emoji rendered as <img alt="…">.
                     const clone = child.cloneNode(true);
                     clone.querySelectorAll('svg').forEach(s => s.remove());
-                    const text = clone.textContent?.trim();
+                    const text = this.getTextWithEmoji(clone).trim();
                     if (text) {
                         const firstLine = text.split('\n').map(l => l.trim()).find(l => l);
                         if (firstLine) return firstLine;
@@ -171,11 +198,18 @@ class WhatsAppGroupIdExtractor {
                         const groups = getAll.result.filter(g => g.id && g.id.includes('@g.us'));
                         // Exact match first
                         let match = groups.find(g => g.subject === groupName);
-                        // Fallback: subject starts with the extracted name.
-                        // Handles trailing emoji not captured by textContent
-                        // (e.g. panel shows "Budapest 2025", DB has "Budapest 2025 🇭🇺").
+                        // Fallback: strip all emoji from both strings and compare.
+                        // Handles cases where extraction partially failed (e.g. WA sets empty
+                        // alt on an emoji image), producing a name missing leading/trailing emoji.
                         if (!match) {
-                            match = groups.find(g => g.subject?.startsWith(groupName));
+                            const stripEmoji = s => (s || '')
+                                .replace(/\p{Extended_Pictographic}/gu, '')
+                                .replace(/\s+/g, ' ')
+                                .trim();
+                            const normalizedSearch = stripEmoji(groupName);
+                            if (normalizedSearch) {
+                                match = groups.find(g => stripEmoji(g.subject) === normalizedSearch);
+                            }
                         }
                         resolve(match ? match.id : null);
                     };

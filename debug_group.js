@@ -6,8 +6,30 @@
  *
  * Step 4 uses the v1.3.1 insertion approach: walk up from ic-perm-media until the
  * parent has >= 4 children (the rows container). No tag names or data-testid used.
+ *
+ * Updated for v1.6.0: group name extraction now walks child nodes to recover emoji
+ * characters rendered as <img alt="…"> by WhatsApp Web.
  */
 (async () => {
+    // Helper: walk child nodes and recover emoji from <img alt="…"> elements.
+    // Plain textContent silently drops <img> tags, losing leading/trailing emoji.
+    const getTextWithEmoji = (el) => {
+        let result = '';
+        const walk = (node) => {
+            for (const child of node.childNodes) {
+                if (child.nodeType === Node.TEXT_NODE) {
+                    result += child.nodeValue;
+                } else if (child.nodeName === 'IMG') {
+                    result += child.getAttribute('alt') || child.getAttribute('data-plain-text') || '';
+                } else {
+                    walk(child);
+                }
+            }
+        };
+        walk(el);
+        return result;
+    };
+
     console.group('🔍 WhatsApp Group ID Extractor — Debug');
 
     // ── Step 1: Locate the panel ────────────────────────────────────────────
@@ -33,8 +55,9 @@
     // and community panels (community-home-subject-input-read-only)
     const subjectEl = document.querySelector('[data-testid*="subject-input-read-only"]');
     console.log('Subject element (data-testid*=):', subjectEl);
-    const subjectText = subjectEl?.textContent?.trim() ?? null;
-    console.log('Subject text:', subjectText);
+    // Use node-walking so emoji rendered as <img alt="🟠"> are included in the result.
+    const subjectText = subjectEl ? getTextWithEmoji(subjectEl).trim() || null : null;
+    console.log('Name from primary selector:', subjectText);
 
     // Fallback selector
     const picContainer = document.querySelector('[aria-label^="Group profile picture for"]');
@@ -71,11 +94,12 @@
                 if (child === container || child.contains(container)) continue;
                 // Skip the group/community picture picker area (shows "Add group icon" when no photo set)
                 if (child.querySelector('[data-testid="group-pic-picker"], [data-testid="community-pic-picker"]')) continue;
-                // Clone and strip SVG elements so icon titles don't bleed into textContent
+                // Clone and strip SVG elements so icon titles don't bleed into the name,
+                // then use node-walking to recover emoji from <img alt="…"> elements.
                 const clone = child.cloneNode(true);
                 clone.querySelectorAll('svg').forEach(s => s.remove());
-                const text = clone.textContent?.trim();
-                console.log('  Sibling text (SVGs stripped):', JSON.stringify(text?.slice(0, 80)));
+                const text = getTextWithEmoji(clone).trim();
+                console.log('  Sibling text (SVGs stripped, emoji-aware):', JSON.stringify(text?.slice(0, 80)));
                 if (text) {
                     const firstLine = text.split('\n').map(l => l.trim()).find(l => l);
                     if (firstLine) { svgFallbackName = firstLine; break; }
@@ -135,14 +159,31 @@
                 console.log('Sample subjects (first 10):',
                     groupRecords.slice(0, 10).map(r => `"${r.subject}"`).join(', '));
 
-                const match = groupRecords.find(r => r.subject === groupName);
+                // Tier 1: exact match
+                let match = groupRecords.find(r => r.subject === groupName);
+                console.log('Tier 1 (exact):', match ? `✅ "${match.subject}"` : '❌ no match');
+
+                // Tier 2: strip all emoji from both sides and compare
+                if (!match) {
+                    const stripEmoji = s => (s || '')
+                        .replace(/\p{Extended_Pictographic}/gu, '')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    const normalizedSearch = stripEmoji(groupName);
+                    console.log('Tier 2 normalised search term:', JSON.stringify(normalizedSearch));
+                    if (normalizedSearch) {
+                        match = groupRecords.find(r => stripEmoji(r.subject) === normalizedSearch);
+                    }
+                    console.log('Tier 2 (emoji-stripped):', match ? `✅ "${match.subject}"` : '❌ no match');
+                }
+
                 if (match) {
                     console.log(`✅ Match found!`);
                     console.log('  id:', match.id);
                     console.log('  subject:', match.subject);
                 } else {
-                    console.warn(`❌ No record with subject === "${groupName}"`);
-                    // Fuzzy hint
+                    console.warn(`❌ No record matched "${groupName}" via any tier`);
+                    // Fuzzy hint for debugging
                     const fuzzy = groupRecords.filter(r =>
                         r.subject?.toLowerCase().includes(groupName.toLowerCase()) ||
                         groupName.toLowerCase().includes(r.subject?.toLowerCase())
