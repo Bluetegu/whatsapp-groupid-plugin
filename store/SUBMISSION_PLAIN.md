@@ -73,7 +73,7 @@ Permissions:
 - activeTab: Required to access the current WhatsApp Web tab for group ID extraction
 - web.whatsapp.com: Ensures the extension only runs on WhatsApp Web for security
 
-Last Updated: May 4, 2026
+Last Updated: April 27, 2026
 
 === ADDITIONAL INFORMATION ===
 
